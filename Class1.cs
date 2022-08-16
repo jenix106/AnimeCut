@@ -107,16 +107,23 @@ namespace AnimeCut
         {
             foreach (RagdollPart part in parts)
             {
-                if (part != null && !part.isSliced && part.ripBreak)
+                if (part?.ragdoll?.creature?.gameObject?.activeSelf == true && part != null && !part.isSliced && part?.ragdoll?.creature != Player.currentCreature)
                 {
-                    part.EnableCharJointBreakForce(0);
-                    part.ragdoll.creature.Kill();
-                    yield return new WaitForEndOfFrame();
-                }
-                else if (part != null && !part.isSliced && !part.ripBreak)
-                {
-                    part.ragdoll.creature.currentHealth -= 20f;
-                    if (part.ragdoll.creature.currentHealth <= 0f) part.ragdoll.creature.Kill();
+                    //part.ragdoll.physicToggle = true;
+                    if (part.sliceAllowed)
+                    {
+                        part.ragdoll.TrySlice(part);
+                        if (part.data.sliceForceKill)
+                            part.ragdoll.creature.Kill();
+                        yield return null;
+                    }
+                    else if (!part.sliceAllowed && !part.ragdoll.creature.isKilled)
+                    {
+                        CollisionInstance instance = new CollisionInstance(new DamageStruct(DamageType.Slash, 20f));
+                        instance.damageStruct.hitRagdollPart = part;
+                        part.ragdoll.creature.Damage(instance);
+                    }
+                    //part.ragdoll.physicToggle = false;
                 }
             }
             parts.Clear();
@@ -130,6 +137,7 @@ namespace AnimeCut
                 if (enemy?.collisionHandler?.ragdollPart != null && enemy?.collisionHandler?.ragdollPart?.ragdoll?.creature != Player.currentCreature)
                 {
                     RagdollPart part = enemy.collisionHandler.ragdollPart;
+                    part.gameObject.SetActive(true);
                     if (part.ragdoll.creature != Player.currentCreature && parts.Contains(part) == false)
                     {
                         parts.Add(part);
